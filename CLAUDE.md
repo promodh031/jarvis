@@ -1,6 +1,6 @@
 # Boot Config
 
-This is the pinned boot file, kept in your working folder (not the vault). It loads automatically at the start of every Claude Code session and survives context compaction; VAULT-INDEX.md may not, so identity and the rules that can't lapse live here. The full operating manual is VAULT-INDEX.md at the vault root — read it at startup. The vault is at `/Users/pmunjeti/jarvis-vault`.
+This is the pinned boot file, kept in your working folder (not the vault). It loads automatically at the start of every Claude Code session and survives context compaction; VAULT-INDEX.md may not, so identity and the rules that can't lapse live here. The full operating manual is VAULT-INDEX.md at the vault root — read it at startup. The vault is at `/Users/venkatapromodhmunjeti/jarvis-vault`.
 
 ## Identity
 
@@ -154,10 +154,10 @@ When you don't know something, or I ask you to look something up, **go to the in
 ## The barehands board
 A hand-tracked glass board runs on this machine (localhost only). You have hands and eyes on it:
 - **When the person asks to SEE something** ("show me", "put it up", "pull up my notes on X"), don't answer with a wall of text in the terminal: find the thing, put it on the glass, and say what you put up. The board is your show-and-tell; reach for it whenever seeing beats reading.
-- **Present something (the show-me verb):** `/Users/pmunjeti/my-agent/barehands/bin/board.sh '{"a":"present","title":"...","body":"..."}'` lands it center stage, enlarged and spotlit, with everything else dimmed. Also takes `"src"` for an image or model, or a notes `"file"` with `"open":1` to spotlight the opened note. The spotlight ends when the person grabs it or you present something else.
-- **Stage ensemble pieces:** `/Users/pmunjeti/my-agent/barehands/bin/board.sh '{"a":"add_card","title":"...","body":"..."}'`, optionally with `"x"` and `"y"` as 0-1 fractions of the screen so several cards do not land on top of each other (the same numbers `board-state.sh` reports back); also `add_img`/`hand` with `"src":"<subfolder>/<file>"` from the media airlock, `explode`, `assemble`, `yank`, `hover`, `reset`.
-- **Look at the board:** `/Users/pmunjeti/my-agent/barehands/bin/board-state.sh` prints every item currently up. Run it before commenting on the board; the user moves things by hand, so never trust memory.
-- **The airlock law:** only files inside `/Users/pmunjeti/my-agent/barehands/media/` can stage. To show a new image, copy it into `media/misc/` first, then stage it.
+- **Present something (the show-me verb):** `/Users/venkatapromodhmunjeti/Projects/Me/jarvis/barehands/bin/board.sh '{"a":"present","title":"...","body":"..."}'` lands it center stage, enlarged and spotlit, with everything else dimmed. Also takes `"src"` for an image or model, or a notes `"file"` with `"open":1` to spotlight the opened note. The spotlight ends when the person grabs it or you present something else.
+- **Stage ensemble pieces:** `/Users/venkatapromodhmunjeti/Projects/Me/jarvis/barehands/bin/board.sh '{"a":"add_card","title":"...","body":"..."}'`, optionally with `"x"` and `"y"` as 0-1 fractions of the screen so several cards do not land on top of each other (the same numbers `board-state.sh` reports back); also `add_img`/`hand` with `"src":"<subfolder>/<file>"` from the media airlock, `explode`, `assemble`, `yank`, `hover`, `reset`.
+- **Look at the board:** `/Users/venkatapromodhmunjeti/Projects/Me/jarvis/barehands/bin/board-state.sh` prints every item currently up. Run it before commenting on the board; the user moves things by hand, so never trust memory.
+- **The airlock law:** only files inside `/Users/venkatapromodhmunjeti/Projects/Me/jarvis/barehands/media/` can stage. To show a new image, copy it into `media/misc/` first, then stage it.
 
 ## You are the mechanic
 This agent runs on open tools that live in this folder (the memory vault, backtalk, ai-visualizer). When anything breaks, acts strange, or needs changing, fixing it is YOUR job, not the person's: read the relevant tool's TROUBLESHOOTING.md and README, diagnose, and repair it yourself. Never send the person off to search the internet. If they ask how something works, explain it in plain English.

@@ -4,9 +4,9 @@ Desktop Hands — control your entire Mac with hand gestures via webcam.
 Part of the Jarvis stack.
 
 Gestures:
-  PINCH (OK sign)        -> left click (tap) or click-and-drag (hold)
+  PINCH (OK sign)        -> left click (cursor freezes so the click lands)
   OPEN HAND + MOVE       -> move the mouse cursor
-  PINCH + DRAG           -> drag (like holding mouse button)
+  PINCH + MOVE HAND      -> drag (only if the hand actually travels)
   FIST (hold 0.5s)       -> right click
   PEACE SIGN (V)         -> double click
   THUMBS UP              -> play/pause media
@@ -33,17 +33,18 @@ pyautogui.PAUSE = 0
 
 SCREEN_W, SCREEN_H = pyautogui.size()
 
-SMOOTHING = 0.4
+SMOOTHING = 0.18
 PINCH_THRESHOLD = 0.045
-CLICK_TIME = 0.3
-SENSITIVITY = 1.8
+SENSITIVITY = 1.0
+DRAG_START_PX = 48
 
 mouse_enabled = True
 debug_mode = True
 smoothing_on = True
 
 prev_x, prev_y = SCREEN_W // 2, SCREEN_H // 2
-pinch_start_time = 0
+pinch_origin_x, pinch_origin_y = SCREEN_W // 2, SCREEN_H // 2
+pinch_hand_x, pinch_hand_y = SCREEN_W // 2, SCREEN_H // 2
 was_pinching = False
 is_dragging = False
 
@@ -61,6 +62,15 @@ def dist(p1, p2):
 
 def lm_xy(landmark):
     return (landmark.x, landmark.y)
+
+
+def screen_xy(landmark):
+    margin = 0.1
+    nx = max(0.0, min(1.0, (landmark.x - margin) / (1.0 - 2 * margin)))
+    ny = max(0.0, min(1.0, (landmark.y - margin) / (1.0 - 2 * margin)))
+    x = int(nx * SCREEN_W * SENSITIVITY)
+    y = int(ny * SCREEN_H * SENSITIVITY)
+    return (max(0, min(SCREEN_W - 1, x)), max(0, min(SCREEN_H - 1, y)))
 
 
 def is_finger_folded(tip, pip_, wrist):
@@ -126,7 +136,8 @@ def draw_hand(frame, landmarks, w, h, pinching):
 
 
 def main():
-    global prev_x, prev_y, pinch_start_time, was_pinching
+    global prev_x, prev_y, was_pinching
+    global pinch_origin_x, pinch_origin_y, pinch_hand_x, pinch_hand_y
     global is_dragging, mouse_enabled, debug_mode, smoothing_on
     global SENSITIVITY, fist_start_time, is_fist, peace_cooldown, thumbs_cooldown
 
@@ -200,24 +211,30 @@ def main():
             target_x = max(0, min(SCREEN_W - 1, target_x))
             target_y = max(0, min(SCREEN_H - 1, target_y))
 
-            if smoothing_on:
+            # Pinching pulls the index tip (the pointer) toward the thumb.
+            # Freeze aim until a real drag starts or the click always misses.
+            if pinching_now and not is_dragging:
+                move_x, move_y = prev_x, prev_y
+            elif smoothing_on:
                 move_x = int(prev_x + (target_x - prev_x) * SMOOTHING)
                 move_y = int(prev_y + (target_y - prev_y) * SMOOTHING)
+                prev_x, prev_y = move_x, move_y
             else:
-                move_x = target_x
-                move_y = target_y
-
-            prev_x, prev_y = move_x, move_y
+                move_x, move_y = target_x, target_y
+                prev_x, prev_y = move_x, move_y
 
             if mouse_enabled:
                 if pinching_now and not was_pinching:
-                    pinch_start_time = now
-                    pyautogui.moveTo(move_x, move_y)
+                    pinch_origin_x, pinch_origin_y = prev_x, prev_y
+                    pinch_hand_x, pinch_hand_y = screen_xy(lm[5])
+                    pyautogui.moveTo(pinch_origin_x, pinch_origin_y)
 
                 elif pinching_now and was_pinching:
-                    if now - pinch_start_time > CLICK_TIME and not is_dragging:
+                    hx, hy = screen_xy(lm[5])
+                    hand_shift = dist((hx, hy), (pinch_hand_x, pinch_hand_y))
+                    if not is_dragging and hand_shift > DRAG_START_PX:
                         is_dragging = True
-                        pyautogui.mouseDown(move_x, move_y)
+                        pyautogui.mouseDown(pinch_origin_x, pinch_origin_y)
                         gesture_text = "DRAGGING"
                         gesture_time = now
                     elif is_dragging:
@@ -229,8 +246,8 @@ def main():
                         is_dragging = False
                         gesture_text = "DROP"
                         gesture_time = now
-                    elif now - pinch_start_time < CLICK_TIME:
-                        pyautogui.click(move_x, move_y)
+                    else:
+                        pyautogui.click(pinch_origin_x, pinch_origin_y)
                         gesture_text = "CLICK"
                         gesture_time = now
 
@@ -300,7 +317,7 @@ def main():
             SENSITIVITY = min(3.0, SENSITIVITY + 0.1)
             print(f"Sensitivity: {SENSITIVITY:.1f}")
         elif key == ord('-'):
-            SENSITIVITY = max(0.5, SENSITIVITY - 0.1)
+            SENSITIVITY = max(0.3, SENSITIVITY - 0.1)
             print(f"Sensitivity: {SENSITIVITY:.1f}")
 
     cap.release()

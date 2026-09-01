@@ -1,0 +1,8 @@
+# Pinned because mediapipe 1.0.x SIGABRTs on this Mac (Metal DrishtiGraph).
+mediapipe==0.10.14
+numpy==1.26.4
+opencv-python==4.11.0.86
+pyautogui==0.9.54
+pillow==12.3.0
+pyobjc-framework-Quartz==12.2.2
+pyobjc-framework-ApplicationServices==12.2.2

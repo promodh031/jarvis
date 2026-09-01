@@ -2,11 +2,11 @@
   "hooks": {
     "UserPromptSubmit": [
       { "hooks": [ { "type": "command",
-          "command": "printf thinking > /Users/pmunjeti/my-agent/barehands/state/state" } ] }
+          "command": "printf thinking > /Users/venkatapromodhmunjeti/Projects/Me/jarvis/barehands/state/state" } ] }
     ],
     "Stop": [
       { "hooks": [ { "type": "command",
-          "command": "printf idle > /Users/pmunjeti/my-agent/barehands/state/state" } ] }
+          "command": "printf idle > /Users/venkatapromodhmunjeti/Projects/Me/jarvis/barehands/state/state" } ] }
     ]
   }
 }
