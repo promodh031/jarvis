@@ -1,0 +1,15 @@
+[submodule "fullstack-agent"]
+	path = fullstack-agent
+	url = https://github.com/jaredrhod/fullstack-agent
+[submodule "ai-memory-vault"]
+	path = ai-memory-vault
+	url = https://github.com/jaredrhod/ai-memory-vault
+[submodule "backtalk"]
+	path = backtalk
+	url = https://github.com/jaredrhod/backtalk
+[submodule "ai-visualizer"]
+	path = ai-visualizer
+	url = https://github.com/jaredrhod/ai-visualizer
+[submodule "barehands"]
+	path = barehands
+	url = https://github.com/jaredrhod/barehands

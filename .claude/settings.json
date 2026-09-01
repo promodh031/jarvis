@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      { "hooks": [ { "type": "command",
+          "command": "printf thinking > /Users/pmunjeti/my-agent/barehands/state/state" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command",
+          "command": "printf idle > /Users/pmunjeti/my-agent/barehands/state/state" } ] }
+    ]
+  }
+}

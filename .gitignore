@@ -1,0 +1,20 @@
+# Python virtual environments
+.venv/
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# Secrets (never commit)
+*.env
+
+# Large model files
+*.bin
+*.onnx
+*.pt
+*.safetensors
+*.task
+
+# Compiled binaries
+desktop-hands/request_camera
