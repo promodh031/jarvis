@@ -6,10 +6,12 @@
 	url = https://github.com/jaredrhod/ai-memory-vault
 [submodule "backtalk"]
 	path = backtalk
-	url = https://github.com/jaredrhod/backtalk
+	url = https://github.com/promodh031/backtalk.git
+	branch = wake-phrase
 [submodule "ai-visualizer"]
 	path = ai-visualizer
-	url = https://github.com/jaredrhod/ai-visualizer
+	url = https://github.com/promodh031/ai-visualizer.git
+	branch = jarvis-local
 [submodule "barehands"]
 	path = barehands
 	url = https://github.com/jaredrhod/barehands
