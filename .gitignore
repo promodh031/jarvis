@@ -1,7 +1,31 @@
 # Python virtual environments
 .venv/
+.overlay-venv/
 __pycache__/
 *.pyc
+*.egg-info/
+
+# macOS
+.DS_Store
+
+# Secrets and machine-local config (never commit)
+*.env
+backtalk.json
+ai-visualizer.json
+
+# Runtime signal bus / logs
+.voice_*
+logs/
+
+# Large model files
+*.bin
+*.onnx
+*.pt
+*.safetensors
+*.task
+
+# Compiled binaries
+desktop-hands/request_camera
 
 # macOS
 .DS_Store

@@ -41,6 +41,7 @@ Current state (verified 2026-09-02): connected via **Console API key**, not SSO.
 - [x] No borders on the mic/history icons or any HUD boxes.
 - [x] Mic must not pick up speaker / TTS output (echo). Only the person's voice.
 - [x] App in `/Applications`: click opens the widget only (no rain browser tab). Closing the app kills the whole stack. `/Applications/Jarvis.app` — source in `apps/Jarvis.app`.
+- [ ] Interrupt (barge-in): while Jarvis or Friday is speaking, talk over them — they stop and that utterance is the next command. Ignore speaker echo and room noise. Code is in `backtalk/backtalk/ears.py` + command-session mic in `main.py`; prove it on a clean launch.
 
 ## Not voice
 

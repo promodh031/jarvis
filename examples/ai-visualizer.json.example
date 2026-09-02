@@ -1,0 +1,8 @@
+{
+  "name": "JARVIS",
+  "badge": "",
+  "face": "rain",
+  "port": 8790,
+  "bus_dir": "/ABS/PATH/TO/THIS/CLONE/backtalk",
+  "thinking_sound": true
+}

@@ -1,0 +1,32 @@
+{
+  "agent_dir": "/ABS/PATH/TO/THIS/CLONE",
+  "name": "Jarvis",
+  "extra_dirs": [
+    "/ABS/PATH/TO/jarvis-vault"
+  ],
+  "ptt_key": "right_option",
+  "mic_mode": "open",
+  "wake_phrase": "hey jarvis",
+  "voice": "bm_lewis",
+  "permission_mode": "bypassPermissions",
+  "resume_last_session": false,
+  "barehands_state_dir": "/ABS/PATH/TO/THIS/CLONE/barehands/state",
+  "thinking_sound": "assets/thinking.wav",
+  "greeting": "Standing by, sir.",
+  "greeting_open_mic": "Standing by, sir.",
+  "command_silence_ms": 1000,
+  "agents": {
+    "jarvis": {
+      "name": "Jarvis",
+      "voice": "bm_lewis",
+      "face": "rain",
+      "prompt": "You are Jarvis. You are not Friday. This conversation is Jarvis only. Never call yourself Friday."
+    },
+    "friday": {
+      "name": "Friday",
+      "voice": "af_heart",
+      "face": "rain",
+      "prompt": "You are Friday, a female AI operator. You are not Jarvis. Never introduce yourself as Jarvis. This conversation is yours alone, separate from Jarvis."
+    }
+  }
+}

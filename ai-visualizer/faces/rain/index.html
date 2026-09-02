@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<!--
+ai-visualizer: give your AI agent a face.
+Copyright (C) 2026 Jared Rhodenizer
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Face in the Code</title>
+<style>
+  @font-face{font-family:"VT323";src:url("../../assets/VT323-Regular.ttf")}
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;background:#000;overflow:hidden;cursor:default}
+  html.av-overlay,html.av-overlay body{background:rgba(0,0,0,.40)!important}
+  .av-overlay #av-phase{top:52px;max-width:78%;padding:10px 14px;font-size:13px;
+    letter-spacing:.03em;pointer-events:none;text-transform:none}
+  .av-overlay #av-corner{right:10px;bottom:8px;font-size:10px;padding:6px 8px}
+  canvas#stage{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;
+    background:transparent}
+  .av-chrome{display:block;position:fixed;top:8px;left:8px;right:8px;z-index:400;
+    pointer-events:none;-webkit-app-region:no-drag}
+  .av-chrome button{pointer-events:auto;position:absolute;top:0;cursor:pointer;
+    color:#3ddc84;border:0;background:rgba(0,0,0,.40);
+    width:36px;height:36px;padding:0;border-radius:2px;
+    display:flex;align-items:center;justify-content:center;
+    -webkit-app-region:no-drag}
+  .av-chrome button:hover{background:rgba(61,220,132,.22)}
+  .av-chrome button svg{width:20px;height:20px;display:block;fill:none;
+    stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+  .av-chrome #av-mic-btn{left:0;right:auto;width:36px;height:36px;padding:0}
+  .av-chrome #av-hist-btn{right:0;left:auto;position:absolute;top:0;z-index:400;
+    width:36px;height:36px;padding:0}
+  #av-mic-btn .ic-off{display:none}
+  #av-mic-btn.muted .ic-on{display:none}
+  #av-mic-btn.muted .ic-off{display:block}
+  body[data-agent='friday'] .av-chrome button{color:#ff7ab0}
+  body[data-agent='friday'] .av-chrome button:hover{background:rgba(160,22,80,.22)}
+  .dragbar{display:none;position:fixed;top:0;left:52px;right:52px;height:40px;
+    z-index:100;-webkit-app-region:drag;cursor:move}
+  html.av-overlay .dragbar{display:block}
+</style>
+</head>
+<body>
+<div class="dragbar"></div>
+<div class="av-chrome" id="av-chrome">
+  <button type="button" id="av-mic-btn" aria-label="Microphone on" title="Mic">
+    <svg class="ic-on" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="9" y="2" width="6" height="11" rx="3"/>
+      <path d="M5 11a7 7 0 0 0 14 0"/>
+      <path d="M12 18v3"/>
+      <path d="M8 21h8"/>
+    </svg>
+    <svg class="ic-off" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="9" y="2" width="6" height="11" rx="3"/>
+      <path d="M5 11a7 7 0 0 0 14 0"/>
+      <path d="M12 18v3"/>
+      <path d="M8 21h8"/>
+      <path d="M4 4l16 16"/>
+    </svg>
+  </button>
+  <button type="button" id="av-hist-btn" aria-label="History" title="History">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="13" r="8"/>
+      <path d="M12 9v4l2.5 1.5"/>
+      <path d="M9 4.5A9 9 0 0 0 4 8"/>
+      <path d="M4 4v4h4"/>
+    </svg>
+  </button>
+</div>
+<canvas id="stage"></canvas>
+<script src="../../core.js"></script>
+<script src="../../history.js"></script>
+<script>
+"use strict";
+/* ============================================================
+   FACE IN THE CODE  ·  the Matrix-rain face
+   Pure rain. Green while Jarvis is on, dark pink for Friday.
+   Listening / thinking / speaking change the rain's speed and glow.
+   Keys: F = fullscreen.
+   ============================================================ */
+
+const Q=new URLSearchParams(location.search);
+const SHOT=Q.get("shot");
+const OVERLAY=Q.get("overlay")==="1";
+if(OVERLAY){
+  document.documentElement.classList.add("av-overlay");
+  document.body.classList.add("av-overlay");
+}
+AV.init({mic:false, overlay:OVERLAY, sound:!OVERLAY});
+{
+  const micBtn=document.getElementById("av-mic-btn");
+  const histBtn=document.getElementById("av-hist-btn");
+  async function paintMute(){
+    try{
+      const s=await fetch("/state",{cache:"no-store"}).then(r=>r.json());
+      if(micBtn){
+        micBtn.classList.toggle("muted", !!s.muted);
+        micBtn.setAttribute("aria-label", s.muted?"Microphone off":"Microphone on");
+        micBtn.title=s.muted?"Mic off":"Mic on";
+      }
+    }catch(e){}
+  }
+  if(micBtn) micBtn.onclick=async e=>{
+    e.preventDefault();e.stopPropagation();
+    try{
+      const j=await fetch("/api/mute",{cache:"no-store"}).then(r=>r.json());
+      micBtn.classList.toggle("muted", !!j.muted);
+      micBtn.setAttribute("aria-label", j.muted?"Microphone off":"Microphone on");
+      micBtn.title=j.muted?"Mic off":"Mic on";
+      if(j.muted && AV._mic && AV.toggleMic) AV.toggleMic();
+    }catch(err){}
+  };
+  if(histBtn) histBtn.onclick=e=>{
+    e.preventDefault();e.stopPropagation();
+    if(window.AVHistory) AVHistory.openHistory();
+    else fetch("/api/open-history",{cache:"no-store"});
+  };
+  paintMute();
+  setInterval(paintMute, 500);
+}
+
+const GLYPH_PX=OVERLAY?12:20, TIERS=16;
+const GREEN=[0,255,70], HEAD=[205,255,205], AMBER=[255,176,64], RED=[255,46,46];
+const PINK=[168,18,78], PINK_HEAD=[255,168,196];
+function isFriday(){
+  return String(AV.name||"").toLowerCase().indexOf("friday")>=0
+      || String(document.body.dataset.agent||"").toLowerCase()==="friday";
+}
+function pal(){ return isFriday()?PINK:GREEN; }
+function rainFam(alert){ return alert?"red":(isFriday()?"pink":"green"); }
+const RAIN_FADE_PER_SEC=170, MUTATE_PER_SEC=45;
+const RAIN_PROFILE={idle:[1.0,.80],listening:[.55,.45],thinking:[2.6,1.0],speaking:[.85,.55]};
+const THINKING_WORDS=["PROCESSING","THINKING","QUERYING MEMORY","COMPILING RESPONSE","RUNNING IT DOWN"];
+AV.ready(a=>{
+  document.title=a.name+" Face in the Code";
+});
+
+// Rain glyph alphabet: half-width katakana (mirrored, per the film) + the
+// usual suspects. The atlas pre-renders every family/tier/glyph once.
+const KATAKANA=[];for(let c=0xFF66;c<0xFF9E;c++)KATAKANA.push(String.fromCharCode(c));
+const LATIN="0123456789ABCDEFGHJKLMNPQRSTVXZ*+=<>:".split("");
+const GLYPHS=KATAKANA.concat(LATIN);
+const GLYPH_FONT="'Arial Unicode MS','MS Gothic','Yu Gothic','Hiragino Kaku Gothic ProN',monospace";
+const UI_FONT="'VT323',monospace";
+
+const cv=document.getElementById("stage"), ctx=cv.getContext("2d",{alpha:true});
+let W=0,H=0;
+
+/* ---------------- glyph atlas: [family][tier] -> one row canvas ---------------- */
+function buildAtlas(cellH,fams){
+  const font=`${cellH}px ${GLYPH_FONT}`;
+  const probe=document.createElement("canvas").getContext("2d");
+  probe.font=font;
+  const cw=Math.max(6,Math.ceil(probe.measureText("ﾊ").width))+1;
+  const lh=Math.round(cellH*1.15);
+  const out={cell:[cw,lh],fams:{}};
+  const draw=(g,col,alphaMirror)=>{
+    g.font=font;g.textBaseline="top";g.fillStyle=col;
+    GLYPHS.forEach((ch,i)=>{
+      const kat=i<KATAKANA.length;
+      g.save();
+      g.translate(i*cw,0);
+      if(kat){g.translate(cw,0);g.scale(-1,1);}   // film-authentic mirror
+      g.fillText(ch,0,1);
+      g.restore();
+    });
+  };
+  for(const[fam,base]of Object.entries(fams)){
+    const tiers=[];
+    for(let t=0;t<TIERS;t++){
+      const k=(t+1)/TIERS;
+      const c=document.createElement("canvas");
+      c.width=cw*GLYPHS.length;c.height=lh;
+      draw(c.getContext("2d"),`rgb(${base[0]*k|0},${base[1]*k|0},${base[2]*k|0})`);
+      tiers.push(c);
+    }
+    out.fams[fam]=tiers;
+  }
+  const heads=document.createElement("canvas");
+  heads.width=cw*GLYPHS.length;heads.height=lh;
+  draw(heads.getContext("2d"),`rgb(${HEAD[0]},${HEAD[1]},${HEAD[2]})`);
+  out.heads=heads;
+  const headsPink=document.createElement("canvas");
+  headsPink.width=cw*GLYPHS.length;headsPink.height=lh;
+  draw(headsPink.getContext("2d"),`rgb(${PINK_HEAD[0]},${PINK_HEAD[1]},${PINK_HEAD[2]})`);
+  out.headsPink=headsPink;
+  const headsRed=document.createElement("canvas");
+  headsRed.width=cw*GLYPHS.length;headsRed.height=lh;
+  draw(headsRed.getContext("2d"),"rgb(255,190,190)");
+  out.headsRed=headsRed;
+  out.stamp=(g,tierCanvas,idx,x,y)=>{
+    g.drawImage(tierCanvas,idx*cw,0,cw,lh,x,y,cw,lh);
+  };
+  out.pick=()=>Math.random()*GLYPHS.length|0;
+  return out;
+}
+
+/* ---------------- rain ---------------- */
+let rain=null;
+class Rain{
+  constructor(){
+    this.atlas=buildAtlas(GLYPH_PX,{green:GREEN,pink:PINK,red:RED});
+    [this.cw,this.chh]=this.atlas.cell;
+    this.cols=Math.max(1,W/this.cw|0);
+    this.rows=Math.max(1,(H/this.chh|0))+1;
+    this.canvas=document.createElement("canvas");
+    this.canvas.width=W;this.canvas.height=H;
+    this.g=this.canvas.getContext("2d",{alpha:true});
+    if(!OVERLAY){this.g.fillStyle="#000";this.g.fillRect(0,0,W,H);}
+    this.mutAcc=0;this.glitchNext=0;
+    this.head=[];this.speed=[];this.char=[];
+    for(let c=0;c<this.cols;c++){
+      this.head.push(-Math.random()*this.rows);
+      this.speed.push(6+Math.random()*8);
+      this.char.push(this.atlas.pick());
+    }
+  }
+  update(dt,state,alert,thinkAmt,now){
+    const[spdMult,headK]=RAIN_PROFILE[state]||RAIN_PROFILE.idle;
+    // trail decay: a translucent black wash each frame fades every glyph
+    // toward darkness, which is what draws the falling tails. Overlay
+    // punches alpha out instead so the desktop shows through.
+    const fade=Math.min(.35,RAIN_FADE_PER_SEC*dt/1000/255*1.6);
+    if(OVERLAY){
+      this.g.globalCompositeOperation="destination-out";
+      this.g.fillStyle=`rgba(0,0,0,${Math.max(.08,fade*3)})`;
+      this.g.fillRect(0,0,W,H);
+      this.g.globalCompositeOperation="source-over";
+    }else{
+      this.g.fillStyle=`rgba(0,0,0,${fade})`;
+      this.g.fillRect(0,0,W,H);
+    }
+    const fam=rainFam(alert);
+    const tiers=this.atlas.fams[fam];
+    const heads=alert?this.atlas.headsRed:(isFriday()?this.atlas.headsPink:this.atlas.heads);
+    // trails follow the state's head brightness, so the whole rain
+    // actually dims when the face is on stage (speaking/listening)
+    const trailTier=tiers[Math.max(1,(TIERS-1)*0.85*headK|0)];
+    const headVisible=headK>=.7;
+    for(let c=0;c<this.cols;c++){
+      const prev=Math.floor(this.head[c]);
+      this.head[c]+=this.speed[c]*spdMult*dt/1000;
+      const cur=Math.floor(this.head[c]);
+      if(cur===prev)continue;
+      const x=c*this.cw;
+      for(let row=prev+1;row<=cur;row++){
+        if(row-1>=0&&row-1<this.rows)
+          this.atlas.stamp(this.g,trailTier,this.char[c],x,(row-1)*this.chh);
+        this.char[c]=this.atlas.pick();
+        if(row>=0&&row<this.rows){
+          const src=headVisible?heads:tiers[(TIERS-1)*headK|0];
+          this.atlas.stamp(this.g,src,this.char[c],x,row*this.chh);
+        }
+      }
+      if(cur>this.rows+(Math.random()*18|0)){
+        this.head[c]=-14+Math.random()*12;
+        this.speed[c]=6+Math.random()*8;
+      }
+    }
+    // in-trail mutations (sparkle)
+    this.mutAcc+=MUTATE_PER_SEC*dt/1000;
+    const m=this.mutAcc|0;
+    if(m){
+      this.mutAcc-=m;
+      const mid=tiers[Math.max(1,(TIERS-1)*0.56*headK|0)];
+      for(let i=0;i<m;i++){
+        const c=Math.random()*this.cols|0;
+        const top=Math.floor(this.head[c])-(2+Math.random()*14|0);
+        if(top>=0&&top<this.rows)
+          this.atlas.stamp(this.g,mid,this.atlas.pick(),c*this.cw,top*this.chh);
+      }
+    }
+    // thinking glitch bursts: short vertical runs stamped into the rain
+    if(thinkAmt>.05&&now>=this.glitchNext){
+      this.glitchNext=now+(60+Math.random()*160)/Math.max(thinkAmt,.2);
+      const bright=tiers[TIERS-1];
+      const n=1+(Math.random()*3|0);
+      for(let k=0;k<n;k++){
+        const c=Math.random()*this.cols|0;
+        const row0=Math.random()*Math.max(1,this.rows-8)|0;
+        const len=3+(Math.random()*6|0);
+        for(let r=row0;r<Math.min(this.rows,row0+len);r++)
+          this.atlas.stamp(this.g,bright,this.atlas.pick(),c*this.cw,r*this.chh);
+      }
+    }
+  }
+}
+
+/* ---------------- lettering + chrome ---------------- */
+const D=AV.util.Descrambler;
+let thinkLabel=null, stateTag=null, tagState="";
+let thinkingAmt=0, micHist=[], rainAlpha=0, now=0;
+
+function drawRibbon(){
+  micHist.push(AV.micLevel);
+  const span=Math.max(60,W/6|0);
+  if(micHist.length>span)micHist=micHist.slice(-span);
+  const base=H*.88|0, amp=H*.07|0, step=W/span;
+  ctx.fillStyle=`rgb(${AMBER[0]},${AMBER[1]},${AMBER[2]})`;
+  for(let i=0;i<micHist.length;i++){
+    const bh=Math.max(2,micHist[i]*amp|0);
+    ctx.fillRect(i*step|0,base-bh,Math.max(2,step-2|0),bh*2);
+  }
+  ctx.font=`${Math.round(Math.min(W,H)*.032)}px ${UI_FONT}`;
+  ctx.textAlign="center";ctx.textBaseline="top";
+  ctx.fillText("LISTENING",W/2,base+amp+8);
+  ctx.textAlign="left";
+}
+
+function drawThinking(dt){
+  if(!thinkLabel||thinkLabel.done)
+    thinkLabel=new D(THINKING_WORDS[Math.random()*THINKING_WORDS.length|0],70,1400);
+  const txt=thinkLabel.render(dt);
+  const fs=Math.round(Math.min(W,H)*.06);
+  ctx.font=`${fs}px ${UI_FONT}`;
+  ctx.textAlign="center";ctx.textBaseline="top";
+  ctx.globalAlpha=Math.min(1,thinkingAmt);
+  ctx.fillStyle=`rgb(${pal()[0]},${pal()[1]},${pal()[2]})`;
+  ctx.fillText(txt,W/2,H*.26);
+  ctx.globalAlpha=1;ctx.textAlign="left";
+}
+
+function drawStateTag(dt,state,alert){
+  const label=alert?"ALERT":state.toUpperCase();
+  const key=`${AV.name}//${label}`;
+  if(key!==tagState){tagState=key;stateTag=new D(`${AV.name} // ${label}`,40);}
+  const fs=Math.round(Math.min(W,H)*.032);
+  ctx.font=`${fs}px ${UI_FONT}`;ctx.textBaseline="alphabetic";
+  const c=pal();
+  ctx.fillStyle=alert?`rgb(${RED[0]},${RED[1]},${RED[2]})`:`rgb(${c[0]},${Math.max(0,c[1]-40)},${c[2]})`;
+  ctx.fillText(stateTag.render(dt),18,H-16);
+}
+
+/* Plan usage, bottom-RIGHT so it sits opposite the state tag rather than
+   fighting it for the same corner. Shared formatting via AV.util.usageRows. */
+function drawUsage(){
+  const rows=AV.util.usageRows();
+  if(!rows.length)return;
+  const fs=Math.round(Math.min(W,H)*.024);
+  ctx.save();
+  ctx.font=`${fs}px ${UI_FONT}`;
+  ctx.textAlign="right";ctx.textBaseline="alphabetic";
+  let y=H-16-(rows.length-1)*(fs+4);
+  for(const r of rows){
+    ctx.fillStyle=r.hot?`rgb(${RED[0]},${RED[1]},${RED[2]})`:`rgb(${pal()[0]},${Math.max(0,pal()[1]-80)},${pal()[2]})`;
+    ctx.fillText(`${r.label} ${r.text}`,W-18,y);
+    y+=fs+4;
+  }
+  ctx.restore();
+}
+
+function drawAlertFrame(){
+  const pulse=.45+.55*Math.abs(Math.sin(now/250));
+  ctx.fillStyle=`rgba(${RED[0]},${RED[1]},${RED[2]},${.6*pulse})`;
+  ctx.fillRect(0,0,W,8);ctx.fillRect(0,H-8,W,8);
+  ctx.fillRect(0,0,8,H);ctx.fillRect(W-8,0,8,H);
+}
+
+/* ---------------- frame ---------------- */
+function frame(dt){
+  AV.tick(dt);
+  now+=dt;
+  const state=AV.state;
+  const tgt=state==="thinking"?1:0;
+  thinkingAmt+=(tgt-thinkingAmt)*Math.min(1,dt/400);
+  rain.update(dt,state,AV.alert,thinkingAmt,now);
+  if(OVERLAY){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle="rgba(0,0,0,.40)";
+    ctx.fillRect(0,0,W,H);
+  }
+  else{ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);}
+  rainAlpha=Math.min(1,rainAlpha+dt/1500);
+  ctx.globalAlpha=rainAlpha;
+  ctx.drawImage(rain.canvas,0,0);
+  ctx.globalAlpha=1;
+  if(AV.alert)drawAlertFrame();
+}
+
+function resize(){
+  W=cv.width=innerWidth;H=cv.height=innerHeight;
+  rain=new Rain();rainAlpha=0;
+}
+addEventListener("resize",resize);
+resize();
+
+addEventListener("keydown",e=>{
+  if(e.key==="f"||e.key==="F"){
+    document.fullscreenElement?document.exitFullscreen()
+      :document.documentElement.requestFullscreen();
+  }
+});
+
+if(SHOT){
+  AV.shotRun(frame);
+}else{
+  let last=performance.now();
+  (function loop(ts){
+    const dt=Math.min(100,ts-last);last=ts;
+    frame(dt);
+    requestAnimationFrame(loop);
+  })(performance.now());
+}
+</script>
+</body>
+</html>
